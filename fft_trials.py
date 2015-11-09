@@ -55,8 +55,6 @@ def fft_demo1(n_modes=2, n_cycles=5, points_per_cycle=500, amplitudes=None, phis
 	x_fft = numpy.linspace(0., 1.0/(n_cycles*pi2), n_cycles*points_per_cycle)
 	#
 	y_prime = numpy.fft.ifft(numpy.real(y_fft))	# this yields an excellend reproduction.
-	
-	
 	#
 	plt.figure(fignum)
 	plt.clf()
@@ -79,6 +77,56 @@ def fft_demo1(n_modes=2, n_cycles=5, points_per_cycle=500, amplitudes=None, phis
 	plt.plot(Ts/pi2, numpy.imag(numpy.array(y_prime)), 'c-')
 	plt.plot(Ts/pi2, D_cum, 'g.-', lw=1.5, zorder=5, alpha=.9, label='cum.')
 	plt.plot(Ts/pi2, D_cum2, 'm.-', lw=1.5, zorder=5, alpha=.9, label='cum.')
+
+def ffdemo2(phases=[0., .25, .5, 1.], fignum=0, n_cycles=4., n_per_cycle=500):
+	# demo to examine phase and complex component of fft amplitudes.
+	#
+	#
+	my_axes=[]
+	dy=(1.0/len(phases))-.02
+	#
+	figses = []
+	for fn in range(fignum, fignum+2):		
+		f=plt.figure(fn)
+		plt.clf()
+		for k in range(len(phases)):
+			f.add_axes([.03, .02 + k*dy, .45, dy])
+			if k==0:
+				f.add_axes([.5, .02 + k*dy, .45, dy])
+			else:
+				f.add_axes([.5, .02 + k*dy, .45, dy], sharex=f.axes[1+2*(k-1)])
+		plt.draw()
+		#
+		figses+=[f]
+		
+	#
+	X = [x*pi2/float(n_per_cycle) for x in numpy.arange(n_cycles*n_per_cycle)]
+	X_fft = numpy.linspace(0., 1.0/(n_cycles*pi2), n_cycles*n_per_cycle)
+	As = []
+	#
+	for k, phi in enumerate(phases):
+		Y = [math.sin(x + phi) for x in X]
+		A_fft = numpy.fft.fft(Y)
+		As += [A_fft]
+		#	
+		#
+		figses[0].axes[2*k].plot(X,Y, '-')
+		figses[0].axes[2*k+1].plot(X_fft[0:len(X_fft)/2], numpy.real(A_fft)[0:len(X_fft)/2], 'b-')
+		figses[0].axes[2*k+1].plot(X_fft[0:len(X_fft)/2], numpy.imag(A_fft)[0:len(X_fft)/2], 'g-')
+		#
+	#for ax in figses[0].axes: ax.draw()
+	plt.show()
+	#
+	# now, reconstruct from the fourier series. how do we eliminate the phase?
+	#
+	plt.figure(1)
+	for k, A in enumerate(As):
+		A_prime = [math.sqrt(a*numpy.conj(a)) for a in A]
+		Y_prime = numpy.fft.ifft(A_prime)
+		#
+		figses[1].axes[2*k].plot(X,Y_prime, '-')
+		figses[1].axes[2*k+1].plot(X_fft, A_prime, 'b-')
+	plt.show()
 	
 
 if __name__=='__main__':
