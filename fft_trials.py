@@ -34,6 +34,8 @@ def fft_demo1(n_modes=2, n_cycles=5, points_per_cycle=500, amplitudes=None, phis
 	#
 	# make a couple synthetic sequences; take FFT, reconstruct, subtract modes, etc.
 	#
+	fs_label = 18.
+	#
 	amplitudes = (amplitudes or [1.0 for j in range(n_modes)])
 	phis       = (phis or [0. for j in range(n_modes)])
 	omega_factor = (omega_factor or float(n_cycles)*pi2)
@@ -56,27 +58,46 @@ def fft_demo1(n_modes=2, n_cycles=5, points_per_cycle=500, amplitudes=None, phis
 	#
 	y_prime = numpy.fft.ifft(numpy.real(y_fft))	# this yields an excellend reproduction.
 	#
+	# reocnstruct from only dominant phase:
+	fft_basis_prime = [y if y==max(y_fft) else 0. for y in y_fft]
+	y_single_phase = numpy.fft.ifft(fft_basis_prime)
+	#
 	plt.figure(fignum)
 	plt.clf()
 	#
 	for D in datas:
-		plt.plot(Ts/pi2, D['data'], '-', label='$A:%.2f, phi:%.2f, \\omega: %.2f$' % (D['A'], D['phi'], D['omega']), lw=1., zorder=4, alpha=.5 )
-	plt.plot(Ts/pi2, D_cum, '.-', lw=1.5, zorder=5, alpha=.9, label='cum.')
+		plt.plot(Ts/pi2, D['data'], '-', label='$A:%.2f, phi:%.2f, \\omega: %.2f$' % (D['A'], D['phi'], D['omega']), lw=1.5, zorder=4, alpha=.5 )
+	plt.plot(Ts/pi2, D_cum, '.-', lw=2.5, zorder=5, alpha=.9, label='cum.')
 	plt.legend(loc=0, numpoints=1)
+	plt.xlabel('$x$ (or $t$) in factors of $pi$ radians', size=fs_label)
+	plt.ylabel('$y=f(x)$', size=fs_label)
 	#
 	plt.figure(fignum+1)
 	plt.clf()
-	plt.plot(range(len(y_fft)),  numpy.real(y_fft), '.-', lw=1.5)
-	plt.plot(range(len(y_fft)),  numpy.imag(y_fft), '.-', lw=1.5)
+	plt.plot(range(len(y_fft)),  numpy.real(y_fft), '.-', lw=2., label='fft_real')
+	plt.plot(range(len(y_fft)),  numpy.imag(y_fft), '.-', lw=2., label='fft_imag')
+	plt.legend(loc=0, numpoints=1)
+	plt.xlabel('frequency $\\omega$ or wave number $k \\sim 1/x$', size=fs_label)
+	plt.xlabel('fft amplitude $A$', size=fs_label)	
 	#
+	# reconstruct from dominant phase:
 	plt.figure(fignum+2)
 	plt.clf()
+	#
+	max_0 = max([abs(x) for x in D_cum])
+	max_sp = max([abs(x) for x in y_single_phase])
+	max_ratio = max_0/max_sp
+	plt.plot(Ts/pi2, D_cum, '.-', lw=2.5, zorder=5, alpha=.9, label='cum.')
+	plt.plot(Ts/pi2, [max_ratio * y for y in y_single_phase], '.-', lw=2, label='single_phase')
+	plt.legend(loc=0, numpoints=1)
+	'''
 	#plt.plot(Ts/pi2, numpy.array(y_prime)-D_cum, '.-')
 	plt.plot(Ts/pi2, numpy.array(y_prime), 'b.-')
 	plt.plot(Ts/pi2, numpy.real(numpy.array(y_prime)), 'r-')
 	plt.plot(Ts/pi2, numpy.imag(numpy.array(y_prime)), 'c-')
 	plt.plot(Ts/pi2, D_cum, 'g.-', lw=1.5, zorder=5, alpha=.9, label='cum.')
 	plt.plot(Ts/pi2, D_cum2, 'm.-', lw=1.5, zorder=5, alpha=.9, label='cum.')
+	'''
 
 def ffdemo2(phases=[0., .25, .5, 1.], fignum=0, n_cycles=4., n_per_cycle=500):
 	# demo to examine phase and complex component of fft amplitudes.
@@ -94,7 +115,7 @@ def ffdemo2(phases=[0., .25, .5, 1.], fignum=0, n_cycles=4., n_per_cycle=500):
 			if k==0:
 				f.add_axes([.5, .02 + k*dy, .45, dy])
 			else:
-				f.add_axes([.5, .02 + k*dy, .45, dy], sharex=f.axes[1+2*(k-1)])
+				f.add_axes([.5, .02 + k*dy, .45, dy], sharex=f.axes[1+2*(k-1)], sharey=f.axes[1+2*(k-1)])
 		plt.draw()
 		#
 		figses+=[f]
@@ -110,9 +131,9 @@ def ffdemo2(phases=[0., .25, .5, 1.], fignum=0, n_cycles=4., n_per_cycle=500):
 		As += [A_fft]
 		#	
 		#
-		figses[0].axes[2*k].plot(X,Y, '-')
-		figses[0].axes[2*k+1].plot(X_fft[0:len(X_fft)/2], numpy.real(A_fft)[0:len(X_fft)/2], 'b-')
-		figses[0].axes[2*k+1].plot(X_fft[0:len(X_fft)/2], numpy.imag(A_fft)[0:len(X_fft)/2], 'g-')
+		figses[0].axes[2*k].plot(X,Y, '-', lw=2.0)
+		figses[0].axes[2*k+1].plot(X_fft[0:len(X_fft)/2], numpy.real(A_fft)[0:len(X_fft)/2], 'b-', lw=2.0)
+		figses[0].axes[2*k+1].plot(X_fft[0:len(X_fft)/2], numpy.imag(A_fft)[0:len(X_fft)/2], 'g-', lw=2.0)
 		#
 	#for ax in figses[0].axes: ax.draw()
 	plt.show()
@@ -124,8 +145,9 @@ def ffdemo2(phases=[0., .25, .5, 1.], fignum=0, n_cycles=4., n_per_cycle=500):
 		A_prime = [math.sqrt(a*numpy.conj(a)) for a in A]
 		Y_prime = numpy.fft.ifft(A_prime)
 		#
-		figses[1].axes[2*k].plot(X,Y_prime, '-')
-		figses[1].axes[2*k+1].plot(X_fft, A_prime, 'b-')
+		#N_len = len(list(X_fft))
+		figses[1].axes[2*k].plot(X,Y_prime, '-', lw=2.0)
+		figses[1].axes[2*k+1].plot(X_fft, A_prime, 'b-', lw=2.0)
 	plt.show()
 	
 
